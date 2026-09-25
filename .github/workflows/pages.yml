@@ -6,10 +6,12 @@ on:
       - main
     paths:
       - "build-the-line-sim/**"
+      - "oil-baron-game/**"
       - ".github/workflows/pages.yml"
   pull_request:
     paths:
       - "build-the-line-sim/**"
+      - "oil-baron-game/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -23,6 +25,14 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: build-the-line-sim
+            playwright: false
+          - app: oil-baron-game
+            playwright: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,11 +41,14 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: build-the-line-sim/package-lock.json
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
       - name: Test and build
-        working-directory: build-the-line-sim
+        working-directory: ${{ matrix.app }}
         run: |
           npm ci
+          if [ "${{ matrix.playwright }}" = "true" ]; then
+            npx playwright install --with-deps chromium
+          fi
           npm test
           npm run build
 
@@ -51,17 +64,27 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-          cache-dependency-path: build-the-line-sim/package-lock.json
+          cache-dependency-path: |
+            build-the-line-sim/package-lock.json
+            oil-baron-game/package-lock.json
       - name: Build build-the-line-sim
         working-directory: build-the-line-sim
         run: |
           npm ci
           npm test
           npm run build
+      - name: Build oil-baron-game
+        working-directory: oil-baron-game
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm test
+          npm run build
       - name: Assemble Pages site
         run: |
-          mkdir -p site/build-the-line-sim
+          mkdir -p site/build-the-line-sim site/oil-baron-game
           cp -a build-the-line-sim/dist/. site/build-the-line-sim/
+          cp -a oil-baron-game/dist/. site/oil-baron-game/
           touch site/.nojekyll
           cat > site/index.html << 'EOF'
           <!doctype html>
@@ -91,6 +114,7 @@ jobs:
                 <h1>Classroom sims</h1>
                 <ul>
                   <li><a href="./build-the-line-sim/">Build the Line / Prove Up</a> — land and railroad policy, 1862–1890</li>
+                  <li><a href="./oil-baron-game/">Oil Baron: Build It or Buy It?</a> — Captains of Industry, 1870–1890</li>
                 </ul>
               </main>
             </body>
