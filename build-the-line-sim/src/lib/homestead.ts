@@ -66,6 +66,14 @@ export function roundMoney(n: number): number {
   return Math.round(n);
 }
 
+/** Whole dollars for $1 and up. Prices under $1 keep cents, so corn is $0.40, not $0. */
+export function formatPrice(dollars: number): string {
+  const sign = dollars < 0 ? "-" : "";
+  const amount = Math.abs(dollars);
+  if (amount < 1) return `${sign}$${amount.toFixed(2)}`;
+  return `${sign}$${Math.round(amount).toLocaleString("en-US")}`;
+}
+
 export function freightCost(distanceMiles: number, bushels: number): number {
   if (distanceMiles < 0 || bushels < 0) {
     throw new Error("distance and bushels must be non-negative");

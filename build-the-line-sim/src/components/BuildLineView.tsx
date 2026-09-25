@@ -89,13 +89,16 @@ export function BuildLineView({
             <h2>Pacific Railway Act</h2>
             <p>
               Bonds of {money(BOND_DOLLARS_PER_MILE.flat)} / {money(BOND_DOLLARS_PER_MILE.foothills)} /{" "}
-              {money(BOND_DOLLARS_PER_MILE.mountains)} per mile. Land grant doubled in 1864. A Credit Mobilier-style
-              card comes next.
+              {money(BOND_DOLLARS_PER_MILE.mountains)} per mile. Those bonds were federal loans to be repaid, not
+              grants. Land grant doubled in 1864. A Credit Mobilier-style card comes next.
             </p>
           </button>
           <button type="button" className="path-card" onClick={() => onChange(createRailroad("hill", Math.random()))}>
             <h2>Great Northern</h2>
-            <p>No federal subsidy. Choose grades. Slower, finished in 1893, paid by traffic.</p>
+            <p>
+              No federal Pacific Railway Act grant. It did inherit a predecessor’s state and territorial land grants.
+              Choose grades. Slower, finished in 1893, paid by traffic.
+            </p>
           </button>
         </div>
       </div>

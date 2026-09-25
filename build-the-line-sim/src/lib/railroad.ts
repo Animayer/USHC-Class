@@ -103,7 +103,7 @@ export const NATIVE_LAND_EVENTS: Record<LinePath, readonly NativeLandEvent[]> = 
       id: "reservations",
       year: 1893,
       title: "The frontier line, and who was already here",
-      body: "The line reaches Puget Sound the year after the 1890 census is read to say the frontier line is gone. “Gone” meant a settler map looked full. It did not mean the nations here had consented, or that the price paid was fair. Finish the company books if you want. Do not call that the whole story.",
+      body: "The line reaches Puget Sound about three years after the 1890 census is read to say the frontier line is gone (1893). “Gone” meant a settler map looked full. It did not mean the nations here had consented, or that the price paid was fair. Finish the company books if you want. Do not call that the whole story.",
     },
   ],
 };
@@ -310,8 +310,8 @@ export function railroadDebrief(state: RailroadState): RailroadDebrief {
 
   const pathLine =
     state.path === "pacific"
-      ? `The Pacific Railway Act (${TIMELINE.pacificRailwayAct}) paid bonds of $16,000, $32,000, or $48,000 per mile and gave a land grant that Congress doubled in ${TIMELINE.landGrantDoubled}. Per-mile pay rewards speed: more miles this season, more subsidy this season. Shoddy track shows up later as rebuild and maintenance. Promontory Summit was ${TIMELINE.promontorySummit}.`
-      : `James J. Hill’s Great Northern took no Pacific Railway Act subsidy. Income came from traffic, so grades mattered: a steep shortcut lays more miles now and costs more to run. The line reached the Pacific in ${TIMELINE.greatNorthernCompleted}, slower than Promontory and built to last.`;
+      ? `The Pacific Railway Act (${TIMELINE.pacificRailwayAct}) paid bonds of $16,000, $32,000, or $48,000 per mile and gave a land grant that Congress doubled in ${TIMELINE.landGrantDoubled}. Those bonds were federal loans to be repaid, not grants. Per-mile pay rewards speed: more miles this season, more subsidy this season. Shoddy track shows up later as rebuild and maintenance. Promontory Summit was ${TIMELINE.promontorySummit}.`
+      : `James J. Hill’s Great Northern took no federal Pacific Railway Act grant. It did inherit a predecessor’s state and territorial land grants. Income came from traffic, so grades mattered: a steep shortcut lays more miles now and costs more to run. The line reached the Pacific in ${TIMELINE.greatNorthernCompleted}, slower than Promontory and built to last.`;
 
   return {
     headline: state.path === "pacific" ? "Pacific Railway Act contract" : "Great Northern, without the subsidy",

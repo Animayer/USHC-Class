@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  CROP_PRICE,
   GRASSHOPPER_YEAR,
   LOAN_AMOUNT,
   SEASON_YEARS,
@@ -10,6 +11,7 @@ import {
   cropOutcome,
   drawWeather,
   fenceChoices,
+  formatPrice,
   freightCost,
   homesteadDebrief,
   proveUp,
@@ -17,6 +19,12 @@ import {
 } from "../lib/homestead";
 
 describe("homestead", () => {
+  it("shows corn in cents and wheat in whole dollars", () => {
+    expect(CROP_PRICE.corn).toBe(0.4);
+    expect(formatPrice(CROP_PRICE.corn)).toBe("$0.40");
+    expect(formatPrice(CROP_PRICE.wheat)).toBe("$1");
+  });
+
   it("scales freight with distance", () => {
     const near = freightCost(8, 300);
     const mid = freightCost(30, 300);

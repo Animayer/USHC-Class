@@ -28,7 +28,11 @@ export function useProgress() {
   }, []);
 
   const setRailroad = useCallback((railroad: RailroadState | null) => {
-    setProgress((prev) => ({ ...prev, railroad }));
+    setProgress((prev) => {
+      const completedLines = { ...prev.completedLines };
+      if (railroad?.done) completedLines[railroad.path] = railroad;
+      return { ...prev, railroad, completedLines };
+    });
   }, []);
 
   const setReflections = useCallback((reflections: Reflections) => {

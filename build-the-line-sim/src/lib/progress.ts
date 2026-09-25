@@ -10,21 +10,30 @@ export type Reflections = {
   q3: string;
 };
 
+export type CompletedLines = {
+  pacific: RailroadState | null;
+  hill: RailroadState | null;
+};
+
 export type Progress = {
   homestead: HomesteadState | null;
   weather: ("rainfall" | "drought")[];
   weatherSeed: number | null;
   railroad: RailroadState | null;
+  completedLines: CompletedLines;
   reflections: Reflections;
 };
 
 export const EMPTY_REFLECTIONS: Reflections = { q1: "", q2: "", q3: "" };
+
+export const EMPTY_LINES: CompletedLines = { pacific: null, hill: null };
 
 export const EMPTY_PROGRESS: Progress = {
   homestead: null,
   weather: [],
   weatherSeed: null,
   railroad: null,
+  completedLines: { ...EMPTY_LINES },
   reflections: { ...EMPTY_REFLECTIONS },
 };
 
@@ -103,11 +112,21 @@ export function sanitizeProgress(raw: unknown): Progress {
   const weather = Array.isArray(row.weather)
     ? row.weather.filter((item): item is "rainfall" | "drought" => item === "rainfall" || item === "drought")
     : [];
+  const railroad = sanitizeRailroad(row.railroad);
+  const rawLines = row.completedLines;
+  const completedLines: CompletedLines = {
+    pacific: sanitizeRailroad(rawLines?.pacific),
+    hill: sanitizeRailroad(rawLines?.hill),
+  };
+  if (railroad?.done && !completedLines[railroad.path]) {
+    completedLines[railroad.path] = railroad;
+  }
   return {
     homestead: sanitizeHomestead(row.homestead),
     weather,
     weatherSeed: typeof row.weatherSeed === "number" ? row.weatherSeed : null,
-    railroad: sanitizeRailroad(row.railroad),
+    railroad,
+    completedLines,
     reflections: {
       q1: typeof reflections.q1 === "string" ? reflections.q1 : "",
       q2: typeof reflections.q2 === "string" ? reflections.q2 : "",
@@ -130,6 +149,16 @@ export function loadProgress(): Progress {
 export function saveProgress(progress: Progress): void {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+}
+
+/** Finished Round 2 paths, Pacific first, then Great Northern. An in-progress game is not included. */
+export function finishedRailroads(progress: Progress): RailroadState[] {
+  const lines: RailroadState[] = [];
+  if (progress.completedLines.pacific?.done) lines.push(progress.completedLines.pacific);
+  if (progress.completedLines.hill?.done) lines.push(progress.completedLines.hill);
+  const active = progress.railroad;
+  if (active?.done && !lines.some((item) => item.path === active.path)) lines.push(active);
+  return lines;
 }
 
 export function resetStoredProgress(): void {
