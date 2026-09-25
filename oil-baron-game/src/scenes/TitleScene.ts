@@ -1,8 +1,8 @@
 import Phaser from "phaser";
 import { AudioBus } from "../audio/bus";
-import { oilApi } from "../game/api";
 import { OilMap } from "../game/mapView";
 import { GOLD, INK, MUTED, PANEL, textStyle } from "../game/palette";
+import { oilApi } from "../game/api";
 import { createGame } from "../logic/engine";
 import { readSave } from "../logic/save";
 import type { RoundLength } from "../logic/types";
@@ -22,8 +22,16 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.setupOpen = false;
+    this.helpOpen = false;
+    this.map = null;
     oilApi.phase = () => (this.helpOpen ? "help" : this.setupOpen ? "setup" : "title");
-    oilApi.startSoloShort = () => this.begin("solo");
+    oilApi.startSoloShort = () => this.begin("solo", 6);
+    oilApi.startSoloFull = () => this.begin("solo", 10);
+    oilApi.openTeams = () => {
+      if (!this.setupOpen) this.openTeams();
+    };
+    oilApi.startTeams = () => this.begin("teams");
     this.add.rectangle(640, 400, 1280, 800, 0x1a2430);
     const preview = createGame({ mode: "solo", names: ["You"], rounds: 6, seed: 1 });
     this.map = new OilMap(this, 500, 200);
@@ -38,7 +46,12 @@ export class TitleScene extends Phaser.Scene {
     this.button(52, 230, 220, 52, "Solo", () => this.begin("solo"));
     this.button(290, 230, 220, 52, "Teams", () => this.openTeams());
     const saved = readSave(safeStorage());
-    if (saved) this.button(528, 230, 220, 52, "Continue", () => this.scene.start("play", { state: saved }));
+    if (saved) {
+      this.button(528, 230, 220, 52, "Continue", () => {
+        oilApi.pending = saved;
+        this.time.delayedCall(0, () => this.scene.start("play", { state: saved }));
+      });
+    }
     this.button(52, 300, 180, 44, "How to play", () => this.showHelp());
     this.button(250, 300, 150, 44, "Credits", () => this.showCredits());
     this.muteButton();
@@ -50,17 +63,27 @@ export class TitleScene extends Phaser.Scene {
     this.map?.update(time, delta);
   }
 
-  private begin(mode: "solo" | "teams"): void {
-    this.audio.unlock();
-    this.audio.play("click");
+  private begin(mode: "solo" | "teams", rounds?: RoundLength): void {
+    try {
+      this.audio.unlock();
+      this.audio.play("click");
+    } catch {
+      /* sound must not block the start of a round */
+    }
+    const length = rounds ?? this.rounds;
     const names = mode === "solo" ? ["You"] : this.names.slice(0, this.teamCount);
     const state = createGame({
       mode,
       names,
-      rounds: this.rounds,
+      rounds: length,
       timerEnabled: mode === "teams" ? this.timer : false,
     });
-    this.scene.start("play", { state });
+    this.setupOpen = false;
+    oilApi.pending = state;
+    if (this.scene.isActive("play") || this.scene.isSleeping("play")) this.scene.stop("play");
+    this.time.delayedCall(0, () => {
+      this.scene.start("play", { state: oilApi.pending ?? state });
+    });
   }
 
   private openTeams(): void {
@@ -189,8 +212,12 @@ export class TitleScene extends Phaser.Scene {
     const box = this.add.rectangle(x + w / 2, y + h / 2, w, h, 0x2a3344).setStrokeStyle(2, 0xf0c14a).setInteractive({ useHandCursor: true });
     const text = this.add.text(x + w / 2, y + h / 2, label, textStyle(18, INK, true)).setOrigin(0.5);
     box.on("pointerup", () => {
-      this.audio.unlock();
-      this.audio.play("click");
+      try {
+        this.audio.unlock();
+        this.audio.play("click");
+      } catch {
+        /* ignore */
+      }
       onClick();
     });
     parent?.add([box, text]);

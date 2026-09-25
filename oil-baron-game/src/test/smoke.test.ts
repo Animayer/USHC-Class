@@ -33,4 +33,32 @@ describe("smoke", () => {
     await page.waitForFunction(() => window.__OILBARON__?.phase() === "choose");
     expect(errors, errors.join("\n")).toEqual([]);
   });
+
+  it("plays a full 10-round game, then play-again into a team start, with no console errors", async () => {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const errors: string[] = [];
+    page.on("pageerror", (error) => errors.push(String(error)));
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    await page.goto(url);
+    await page.waitForFunction(() => window.__OILBARON__?.phase() === "title");
+    await page.evaluate(() => window.__OILBARON__?.startSoloFull());
+    await page.waitForFunction(() => window.__OILBARON__?.phase() === "choose");
+    for (let step = 0; step < 40; step += 1) {
+      const phase = await page.evaluate(() => window.__OILBARON__?.phase());
+      if (phase === "done") break;
+      await page.evaluate(() => window.__OILBARON__?.act());
+      await page.waitForTimeout(40);
+    }
+    await page.waitForFunction(() => window.__OILBARON__?.phase() === "done");
+    await page.evaluate(() => window.__OILBARON__?.playAgain());
+    await page.waitForFunction(() => window.__OILBARON__?.phase() === "title");
+    await page.evaluate(() => window.__OILBARON__?.openTeams());
+    await page.waitForFunction(() => window.__OILBARON__?.phase() === "setup");
+    await page.evaluate(() => window.__OILBARON__?.startTeams());
+    await page.waitForFunction(() => window.__OILBARON__?.phase() === "choose");
+    expect(errors, errors.join("\n")).toEqual([]);
+    await page.close();
+  });
 });

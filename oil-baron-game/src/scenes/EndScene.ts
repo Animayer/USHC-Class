@@ -24,6 +24,12 @@ export class EndScene extends Phaser.Scene {
   create(): void {
     if (!this.state) return;
     oilApi.phase = () => "done";
+    oilApi.playAgain = () => {
+      clearSave(safeStorage());
+      oilApi.pending = null;
+      if (this.scene.isActive("play") || this.scene.isSleeping("play")) this.scene.stop("play");
+      this.scene.start("title");
+    };
     this.add.rectangle(640, 400, 1280, 800, 0x141a22);
     this.add.text(40, 24, "The ledger closes", textStyle(36, GOLD, true));
     this.add.text(40, 70, "Two scores. The class question sits between them.", textStyle(16, MUTED));
@@ -61,6 +67,8 @@ export class EndScene extends Phaser.Scene {
     this.button(260, buttonY, 200, 44, "Print slip", () => this.print());
     this.button(480, buttonY, 200, 44, "Play again", () => {
       clearSave(safeStorage());
+      oilApi.pending = null;
+      if (this.scene.isActive("play") || this.scene.isSleeping("play")) this.scene.stop("play");
       this.scene.start("title");
     });
     if (this.state.teams.length > 1) {
@@ -77,7 +85,7 @@ export class EndScene extends Phaser.Scene {
 
   private copy(): void {
     const text = this.slip();
-    const done = () => this.flash("Copied.");
+    const done = () => this.flash("Copied to clipboard.");
     if (navigator.clipboard?.writeText) {
       void navigator.clipboard.writeText(text).then(done).catch(() => this.fallbackCopy(text));
       return;
@@ -92,7 +100,7 @@ export class EndScene extends Phaser.Scene {
     area.select();
     document.execCommand("copy");
     area.remove();
-    this.flash("Copied.");
+    this.flash("Copied to clipboard.");
   }
 
   private print(): void {
@@ -105,12 +113,19 @@ export class EndScene extends Phaser.Scene {
     popup.document.write(`<pre style="font:16px/1.45 system-ui,sans-serif;white-space:pre-wrap">${safe}</pre>`);
     popup.document.close();
     popup.focus();
+    const closeSlip = () => {
+      if (!popup.closed) popup.close();
+    };
+    popup.addEventListener("afterprint", closeSlip);
     popup.print();
   }
 
   private flash(message: string): void {
-    const note = this.add.text(960, 742, message, textStyle(16, GOLD, true));
-    this.time.delayedCall(1600, () => note.destroy());
+    const banner = this.add.container(640, 120).setDepth(20);
+    const bg = this.add.rectangle(0, 0, 420, 64, 0x1c2430).setStrokeStyle(3, 0xf0c14a);
+    const note = this.add.text(0, 0, message, textStyle(22, GOLD, true)).setOrigin(0.5);
+    banner.add([bg, note]);
+    this.time.delayedCall(1600, () => banner.destroy());
   }
 
   private button(x: number, y: number, w: number, h: number, label: string, onClick: () => void): void {

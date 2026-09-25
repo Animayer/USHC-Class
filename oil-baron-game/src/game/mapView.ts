@@ -78,12 +78,21 @@ export class OilMap {
   show(team: TeamState): void {
     const level = Math.min(4, team.efficiencyBuilds + (team.share >= 45 ? 1 : 0));
     this.playerLevel = level;
-    this.player.setTexture(`refinery-${level}`);
+    const refinery = `refinery-${level}`;
+    if (this.player.texture.key !== refinery && this.player.scene.textures.exists(refinery)) {
+      this.player.setTexture(refinery);
+    }
+    const grown = 1 + level * 0.28;
+    this.player.setScale(grown);
+    this.player.setPosition(150 - level * 6, 210 - level * 14);
     for (const rival of team.rivals) {
       const sprite = this.rivals.get(rival.id);
-      if (!sprite) continue;
-      sprite.setTexture(rival.alive ? RIVAL_TEX[rival.id] : "sold");
-      sprite.setAlpha(rival.alive ? 0.55 + (rival.health / 100) * 0.45 : 0.85);
+      if (!sprite?.active) continue;
+      const key = rival.alive ? RIVAL_TEX[rival.id] : "sold";
+      if (sprite.texture.key !== key && sprite.scene.textures.exists(key)) sprite.setTexture(key);
+      const size = rival.alive ? 0.55 + (rival.health / 100) * 0.7 : 0.42;
+      sprite.setScale(size);
+      sprite.setAlpha(rival.alive ? 1 : 0.75);
     }
     this.pipe.clear();
     if (team.pipelineOwned) {
@@ -97,15 +106,18 @@ export class OilMap {
   }
 
   update(_time: number, delta: number): void {
+    if (!this.train.active || !this.train.scene) return;
     if (!this.paused) {
       this.trainX += delta * 0.04;
       if (this.trainX > 720) this.trainX = -20;
       this.frame += delta;
       this.train.setPosition(this.trainX, 300);
-      this.train.setTexture(Math.floor(this.frame / 180) % 2 === 0 ? "train-0" : "train-1");
+      const frameKey = Math.floor(this.frame / 180) % 2 === 0 ? "train-0" : "train-1";
+      if (this.train.scene.textures.exists(frameKey)) this.train.setTexture(frameKey);
     }
     const stacks = this.playerLevel >= 1 ? 2 : 1;
     this.smokes.forEach((bit, index) => {
+      if (!bit.sprite.active) return;
       if (bit.life <= 0) {
         const stackX = 150 + (index % stacks) * 28 + 16;
         bit.sprite.setPosition(stackX, 210);

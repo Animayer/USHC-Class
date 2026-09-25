@@ -39,29 +39,56 @@ export class PlayScene extends Phaser.Scene {
     super("play");
   }
 
+  private pieShown: number[] = [];
+  private pieTarget: number[] = [];
+  private bursts: Phaser.GameObjects.Arc[] = [];
+  private onKey!: (event: KeyboardEvent) => void;
+
   init(data: { state?: GameState }): void {
-    if (!data.state) {
+    const state = data.state ?? oilApi.pending;
+    if (!state) {
       this.scene.start("title");
       return;
     }
-    this.state = data.state;
+    this.state = state;
+    oilApi.pending = null;
   }
 
   create(): void {
     if (!this.state) return;
+    this.slots = [];
+    this.hud = new Map();
+    this.selected = 0;
+    this.paused = false;
+    this.timerLeft = this.state.timerSeconds;
+    this.timerAcc = 0;
+    this.bursts = [];
+    this.pieShown = [];
+    this.pieTarget = [];
     oilApi.phase = () => this.state.phase;
     oilApi.startSoloShort = () => undefined;
+    oilApi.startSoloFull = () => undefined;
+    oilApi.act = () => {
+      if (!this.state) return;
+      if (this.state.phase === "choose") this.confirmPlay();
+      else if (this.state.phase === "event" || this.state.phase === "epilogue") this.continueEvent();
+    };
     this.add.rectangle(640, 400, 1280, 800, 0x1a2430);
-    this.map = new OilMap(this, 12, 64);
-    this.pie = this.add.graphics();
-    this.chart = this.add.graphics();
-    this.meters = this.add.graphics();
+    this.map = new OilMap(this, 8, 48);
+    this.map.root.setScale(0.74);
+    this.pie = this.add.graphics().setDepth(6);
+    this.chart = this.add.graphics().setDepth(6);
+    this.meters = this.add.graphics().setDepth(6);
     this.buildHud();
     this.buildCards();
     this.buildEvent();
     this.buildTeacher();
     this.buildPause();
     this.bindKeys();
+    this.events.once("shutdown", () => {
+      this.input.keyboard?.off("keydown", this.onKey);
+      this.keysBound = false;
+    });
     this.audio.unlock();
     this.refresh();
     this.persist();
@@ -70,6 +97,16 @@ export class PlayScene extends Phaser.Scene {
   update(time: number, delta: number): void {
     if (!this.state || this.paused) return;
     this.map.update(time, delta);
+    this.animatePie();
+    this.bursts = this.bursts.filter((bit) => {
+      bit.y -= delta * 0.05;
+      bit.alpha -= delta / 700;
+      if (bit.alpha <= 0) {
+        bit.destroy();
+        return false;
+      }
+      return true;
+    });
     if (this.state.timerEnabled && this.state.phase === "choose" && !this.teacherRoot.visible) {
       this.timerAcc += delta;
       if (this.timerAcc >= 1000) {
@@ -95,26 +132,26 @@ export class PlayScene extends Phaser.Scene {
     this.button(1060, 8, 100, 36, "Teacher", () => this.toggleTeacher());
     this.button(1172, 8, 90, 36, "Pause", () => this.setPaused(true));
 
-    this.add.rectangle(1024, 292, 480, 440, PANEL).setStrokeStyle(2, 0x3d4a5c);
-    this.add.text(800, 78, "Market share", textStyle(16, GOLD, true));
-    this.add.text(800, 250, "Kerosene ¢/gal", textStyle(16, GOLD, true));
-    this.hud.set("price", this.add.text(980, 250, "", textStyle(16, INK, true)));
-    this.hud.set("opinion", this.add.text(800, 400, "", textStyle(14, INK)));
-    this.hud.set("heat", this.add.text(1020, 400, "", textStyle(14, INK)));
-    this.hud.set("rivals", this.add.text(800, 448, "", { ...textStyle(14, MUTED), lineSpacing: 4 }));
-    this.hud.set("timer", this.add.text(800, 70, "", textStyle(14, BLUE)));
-    this.add.text(16, 512, "Play one card", textStyle(18, GOLD, true));
-    this.hud.set("hint", this.add.text(180, 516, "1–3 select · Enter plays · Blue cuts the lamp bill · Amber asks for a favor", textStyle(14, MUTED)));
+    this.add.rectangle(940, 214, 650, 330, PANEL).setStrokeStyle(2, 0x3d4a5c).setDepth(4);
+    this.add.text(630, 56, "Market share", textStyle(16, GOLD, true)).setDepth(7);
+    this.add.text(860, 56, "Kerosene ¢/gal", textStyle(16, GOLD, true)).setDepth(7);
+    this.hud.set("price", this.add.text(1040, 56, "", textStyle(16, INK, true)).setDepth(7));
+    this.hud.set("opinion", this.add.text(630, 250, "", textStyle(14, INK)).setDepth(7));
+    this.hud.set("heat", this.add.text(960, 250, "", textStyle(14, INK)).setDepth(7));
+    this.hud.set("rivals", this.add.text(630, 292, "", { ...textStyle(14, MUTED), lineSpacing: 3 }).setDepth(7));
+    this.hud.set("timer", this.add.text(630, 48, "", textStyle(14, BLUE)).setDepth(7));
+    this.add.text(16, 400, "Play one card", textStyle(18, GOLD, true));
+    this.hud.set("hint", this.add.text(180, 404, "1–3 select · Enter plays · Blue cuts the lamp bill · Amber asks for a favor", textStyle(14, MUTED)));
   }
 
   private buildCards(): void {
     for (let index = 0; index < 3; index += 1) {
-      const x = 24 + index * 416;
-      const root = this.add.container(x, 548);
-      const frame = this.add.rectangle(196, 110, 392, 210, 0x243044).setStrokeStyle(4, 0x0072b2);
+      const x = 16 + index * 420;
+      const root = this.add.container(x, 432);
+      const frame = this.add.rectangle(200, 170, 404, 340, 0x243044).setStrokeStyle(4, 0x0072b2);
       const kind = this.add.text(16, 12, "", textStyle(14, GOLD, true));
-      const title = this.add.text(16, 40, "", textStyle(22, INK, true));
-      const body = this.add.text(16, 78, "", { ...textStyle(16, INK), wordWrap: { width: 360 }, lineSpacing: 4 });
+      const title = this.add.text(16, 36, "", { ...textStyle(20, INK, true), wordWrap: { width: 370 } });
+      const body = this.add.text(16, 92, "", { ...textStyle(15, INK), wordWrap: { width: 370 }, lineSpacing: 3 });
       frame.setInteractive({ useHandCursor: true });
       frame.on("pointerup", () => {
         if (this.selected === index) this.confirmPlay();
@@ -168,11 +205,11 @@ export class PlayScene extends Phaser.Scene {
   private bindKeys(): void {
     if (this.keysBound) return;
     this.keysBound = true;
-    this.input.keyboard?.on("keydown", (event: KeyboardEvent) => {
+    this.onKey = (event: KeyboardEvent) => {
       if (!this.state) return;
       if (event.key === "m" || event.key === "M") {
         const muted = this.audio.toggle();
-        this.hud.get("sound")?.setText(muted ? "Off" : "On");
+        this.hud.get("sound")?.setText(muted ? "Sound off" : "Sound on");
       }
       if (event.key === "p" || event.key === "P" || event.key === "Escape") this.setPaused(!this.paused);
       if (event.key === "t" || event.key === "T") this.toggleTeacher();
@@ -187,7 +224,8 @@ export class PlayScene extends Phaser.Scene {
       if ((event.key === " " || event.key === "Enter") && (this.state.phase === "event" || this.state.phase === "epilogue")) {
         this.continueEvent();
       }
-    });
+    };
+    this.input.keyboard?.on("keydown", this.onKey);
   }
 
   private confirmPlay(): void {
@@ -198,7 +236,8 @@ export class PlayScene extends Phaser.Scene {
     this.state = playCard(this.state, id);
     this.audio.play(card.kind === "privilege" ? "bad" : "card");
     if (card.buyout || card.squeeze || this.state.event?.severity === "major") {
-      this.cameras.main.shake(180, 0.003);
+      this.cameras.main.shake(260, 0.006);
+      this.burst(640, 360);
       if (card.buyout) this.audio.play("buyout");
     }
     this.timerLeft = this.state.timerSeconds;
@@ -267,54 +306,20 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private paintSide(team: TeamState): void {
-    this.pie.clear();
     const slices = [
-      { share: team.share, color: 0x0072b2 },
-      ...team.rivals.map((rival) => ({
-        share: rival.share,
-        color: rival.id === "payne" ? 0xe69f00 : rival.id === "lakeshore" ? 0xcc79a7 : rival.id === "mahoning" ? 0x009e73 : 0x56b4e9,
-      })),
+      team.share,
+      ...team.rivals.map((rival) => rival.share),
     ];
-    let angle = -Math.PI / 2;
-    for (const slice of slices) {
-      const sweep = (slice.share / 100) * Math.PI * 2;
-      this.pie.fillStyle(slice.color, 1);
-      this.pie.slice(900, 180, 62, angle, angle + sweep, false);
-      this.pie.fillPath();
-      angle += sweep;
-    }
-    this.pie.lineStyle(2, 0xf4efe4, 1);
-    this.pie.strokeCircle(900, 180, 62);
-
-    this.chart.clear();
-    this.chart.lineStyle(2, 0x5c5346, 1);
-    this.chart.strokeRect(800, 280, 440, 100);
-    const years = this.state.years;
-    const xAt = (year: number) => {
-      const span = years[years.length - 1] - years[0];
-      return 810 + ((year - years[0]) / span) * 410;
-    };
-    const yAt = (price: number) => 290 + ((26 - price) / 20) * 80;
-    this.chart.lineStyle(2, 0x8a8070, 1);
-    this.chart.beginPath();
-    this.chart.moveTo(xAt(HISTORICAL_PRICE[0].year), yAt(HISTORICAL_PRICE[0].price));
-    this.chart.lineTo(xAt(Math.min(1885, years[years.length - 1])), yAt(8));
-    this.chart.strokePath();
-    this.chart.lineStyle(3, 0x7ec8e3, 1);
-    team.priceHistory.forEach((point, index) => {
-      const x = xAt(point.year);
-      const y = yAt(point.price);
-      if (index === 0) this.chart.beginPath();
-      if (index === 0) this.chart.moveTo(x, y);
-      else this.chart.lineTo(x, y);
-    });
-    this.chart.strokePath();
+    if (this.pieShown.length !== slices.length) this.pieShown = slices.slice();
+    this.pieTarget = slices;
+    this.drawPie(this.pieShown);
+    this.drawChart(team);
 
     const scores = scoreTeam(team);
     this.hud.get("price")?.setText(`${team.price}¢  ·  value ${scores.customer}  privilege ${scores.privilege}`);
     this.meters.clear();
-    this.bar(800, 430, team.opinion, 0x0072b2);
-    this.bar(1020, 430, team.heat, 0xe69f00);
+    this.bar(630, 274, team.opinion, 0x0072b2);
+    this.bar(960, 274, team.heat, 0xe69f00);
     this.hud.get("opinion")?.setText(`Public opinion ${team.opinion} ${opinionLabel(team.opinion)}`);
     this.hud.get("heat")?.setText(`Political heat ${team.heat} ${heatLabel(team.heat)}`);
     this.hud.get("rivals")?.setText(
@@ -322,6 +327,81 @@ export class PlayScene extends Phaser.Scene {
         .map((rival) => `${rival.short} ${rival.alive ? `${rival.share}%  health ${rival.health}` : "SOLD"}`)
         .join("\n"),
     );
+  }
+
+  private drawPie(shares: number[]): void {
+    const colors = [0x0072b2, 0xe69f00, 0xcc79a7, 0x009e73, 0x56b4e9];
+    const cx = 720;
+    const cy = 160;
+    const radius = 58;
+    this.pie.clear();
+    this.pie.fillStyle(0x141a22, 1);
+    this.pie.fillCircle(cx, cy, radius + 4);
+    let angle = -Math.PI / 2;
+    const total = shares.reduce((sum, share) => sum + share, 0) || 1;
+    shares.forEach((share, index) => {
+      const sweep = (share / total) * Math.PI * 2;
+      const steps = Math.max(1, Math.ceil(sweep / 0.35));
+      this.pie.fillStyle(colors[index] ?? 0xffffff, 1);
+      for (let step = 0; step < steps; step += 1) {
+        const a0 = angle + (sweep * step) / steps;
+        const a1 = angle + (sweep * (step + 1)) / steps;
+        this.pie.fillTriangle(cx, cy, cx + Math.cos(a0) * radius, cy + Math.sin(a0) * radius, cx + Math.cos(a1) * radius, cy + Math.sin(a1) * radius);
+      }
+      angle += sweep;
+    });
+  }
+
+  private animatePie(): void {
+    if (this.pieTarget.length === 0) return;
+    let moving = false;
+    this.pieShown = this.pieShown.map((value, index) => {
+      const target = this.pieTarget[index] ?? value;
+      const next = value + (target - value) * 0.15;
+      if (Math.abs(target - next) > 0.2) moving = true;
+      return Math.abs(target - next) <= 0.2 ? target : next;
+    });
+    if (moving) this.drawPie(this.pieShown);
+  }
+
+  private drawChart(team: TeamState): void {
+    this.chart.clear();
+    this.chart.fillStyle(0x141a22, 1);
+    this.chart.fillRect(860, 86, 400, 140);
+    const years = this.state.years;
+    const span = Math.max(1, years[years.length - 1] - years[0]);
+    const xAt = (year: number) => 870 + ((year - years[0]) / span) * 370;
+    const yAt = (price: number) => 96 + ((26 - price) / 22) * 110;
+    const segment = (x0: number, y0: number, x1: number, y1: number, color: number) => {
+      const steps = 12;
+      for (let step = 0; step < steps; step += 1) {
+        const t0 = step / steps;
+        const t1 = (step + 1) / steps;
+        this.chart.fillStyle(color, 1);
+        this.chart.fillCircle(x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0, 2);
+        this.chart.fillRect(x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t1, Math.max(2, (x1 - x0) / steps), 2);
+      }
+    };
+    segment(xAt(HISTORICAL_PRICE[0].year), yAt(HISTORICAL_PRICE[0].price), xAt(Math.min(1885, years[years.length - 1])), yAt(8), 0x8a8070);
+    const points = team.priceHistory;
+    points.forEach((point, index) => {
+      const x = xAt(point.year);
+      const y = yAt(point.price);
+      this.chart.fillStyle(0x7ec8e3, 1);
+      this.chart.fillCircle(x, y, 4);
+      if (index > 0) {
+        const prev = points[index - 1];
+        segment(xAt(prev.year), yAt(prev.price), x, y, 0x7ec8e3);
+      }
+    });
+  }
+
+  private burst(x: number, y: number): void {
+    for (let i = 0; i < 14; i += 1) {
+      const bit = this.add.circle(x + (i - 7) * 10, y, 5, i % 2 === 0 ? 0xf0c14a : 0x7ec8e3, 0.9).setDepth(12);
+      bit.setData("vx", (i - 7) * 0.4);
+      this.bursts.push(bit);
+    }
   }
 
   private bar(x: number, y: number, value: number, color: number): void {
@@ -346,7 +426,7 @@ export class PlayScene extends Phaser.Scene {
       slot.body.setText(`${card.summary}\n${card.history}`);
       slot.frame.setFillStyle(card.kind === "efficiency" ? 0x16324a : 0x3a2e14);
       slot.frame.setStrokeStyle(selected ? 6 : 4, card.kind === "efficiency" ? 0x7ec8e3 : 0xf0c14a);
-      slot.root.setY(selected ? 536 : 548);
+      slot.root.setY(selected ? 424 : 432);
       slot.root.setScale(1, 1);
     });
   }

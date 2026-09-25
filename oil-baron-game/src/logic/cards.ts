@@ -60,7 +60,7 @@ export const CARDS: CardDef[] = [
     name: "Vertical Integration",
     kind: "efficiency",
     summary: "Wells, pipes, stills, and barrels. One owner.",
-    history: "Vertical means up and down the chain. That was Carnegie's steel strategy more than Rockefeller's.",
+    history: "Own the whole chain: barrels, tank cars, pipelines. Standard Oil made its own barrels; Carnegie did the same in steel.",
     once: true,
     cost: -2,
     price: -2,
