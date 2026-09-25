@@ -6,4 +6,4 @@ Merlin files Drive; Cursor cloud agents build code here. Companion to Economics-
 **How we use this:** You talk to Merlin → Merlin plans → a Cursor cloud agent builds in this repo → Merlin tests and ships (Pages or links).
 
 ## Status
-Starter repo. First real project lands when Merlin hands a cloud agent a brief.
+First sim: [Build the Line / Prove Up](build-the-line-sim/) (USHC.3, 1862–1890). Pages publishes it at `build-the-line-sim/` after Settings → Pages is set to the `gh-pages` branch.
