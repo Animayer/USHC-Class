@@ -1,0 +1,188 @@
+import type { CardDef, TeamState } from "./types";
+
+export const CARDS: CardDef[] = [
+  {
+    id: "stills",
+    name: "Better Stills",
+    kind: "efficiency",
+    summary: "Waste less crude. The gallon gets cheaper.",
+    history: "Rockefeller's edge was cost. Carnegie said the same thing about steel: watch the costs.",
+    cost: -2,
+    price: -2,
+    share: 3,
+    opinion: 4,
+    heat: 0,
+    quality: 1,
+  },
+  {
+    id: "byproducts",
+    name: "Sell the Byproducts",
+    kind: "efficiency",
+    summary: "Paraffin, lubricants, and petroleum jelly.",
+    history: "Rivals dumped waste. Chemists turned it into products. Vaseline was a famous petroleum-jelly brand.",
+    cost: -1,
+    price: -1,
+    share: 2,
+    opinion: 6,
+    heat: 0,
+    quality: 3,
+  },
+  {
+    id: "barrels",
+    name: "Own the Barrels",
+    kind: "efficiency",
+    summary: "Stop buying barrels. Make them yourself.",
+    history: "Vertical integration: own a step you used to rent. Carnegie did this with ore, coke, and ships.",
+    once: true,
+    cost: -2,
+    price: -1,
+    share: 2,
+    opinion: 2,
+    heat: 0,
+    quality: 1,
+  },
+  {
+    id: "pipeline",
+    name: "Lay a Pipeline",
+    kind: "efficiency",
+    summary: "Move oil without asking a railroad.",
+    history: "A pipeline is a technology answer to freight. The Tidewater Pipeline (1879) used the same idea against Standard.",
+    once: true,
+    cost: -2,
+    price: -2,
+    share: 4,
+    opinion: 3,
+    heat: 2,
+    quality: 0,
+  },
+  {
+    id: "vertical",
+    name: "Vertical Integration",
+    kind: "efficiency",
+    summary: "Wells, pipes, stills, and barrels. One owner.",
+    history: "Vertical means up and down the chain. That was Carnegie's steel strategy more than Rockefeller's.",
+    once: true,
+    cost: -2,
+    price: -2,
+    share: 3,
+    opinion: 5,
+    heat: 0,
+    quality: 2,
+  },
+  {
+    id: "chemists",
+    name: "Hire Chemists",
+    kind: "efficiency",
+    summary: "Measure every fraction. Waste is a choice.",
+    history: "Standard employed scientists to raise how much kerosene one barrel of crude could yield.",
+    cost: -1,
+    price: -1,
+    share: 2,
+    opinion: 5,
+    heat: 0,
+    quality: 3,
+  },
+  {
+    id: "rebates",
+    name: "Secret Rebates",
+    kind: "privilege",
+    summary: "The railroad pays you back. Rivals pay full freight.",
+    history: "South Improvement Company, 1872. Tarbell later called this playing with loaded dice.",
+    cost: -1,
+    price: -1,
+    share: 7,
+    opinion: -8,
+    heat: 14,
+    quality: 0,
+  },
+  {
+    id: "drawbacks",
+    name: "Drawbacks",
+    kind: "privilege",
+    summary: "Collect a cut of the freight your rivals pay.",
+    history: "A drawback paid the favored shipper from the rate charged to everyone else. It was the ugliest part of 1872.",
+    cost: -1,
+    price: -1,
+    share: 5,
+    opinion: -10,
+    heat: 12,
+    quality: 0,
+  },
+  {
+    id: "lobby",
+    name: "Lobby for Favors",
+    kind: "privilege",
+    summary: "A friendly committee. A friendly court.",
+    history: "Folsom's political entrepreneur seeks help from the state. Tariffs, charters, and friendly law are the tools.",
+    cost: 0,
+    price: 0,
+    share: 3,
+    opinion: -4,
+    heat: 10,
+    quality: 0,
+  },
+  {
+    id: "squeeze",
+    name: "Railroad Squeeze",
+    kind: "privilege",
+    summary: "Cars go missing for anyone who will not sell.",
+    history: "Pressure through the railroads was horizontal strategy: same business, rivals pushed out.",
+    cost: 0,
+    price: 0,
+    share: 0,
+    opinion: -6,
+    heat: 11,
+    quality: 0,
+    squeeze: true,
+  },
+  {
+    id: "buyout",
+    name: "Cleveland Buyout",
+    kind: "privilege",
+    summary: "Buy the refinery, or let the rates bury it.",
+    history: "The Cleveland Massacre, 1872. Horizontal integration: buy competitors in the same business.",
+    minYear: 1872,
+    cost: 0,
+    price: -1,
+    share: 0,
+    opinion: -5,
+    heat: 8,
+    quality: 0,
+    buyout: true,
+  },
+  {
+    id: "trust",
+    name: "Form the Trust",
+    kind: "privilege",
+    summary: "Many companies. One board of trustees.",
+    history: "Standard Oil Trust, 1882. Stockholders handed control to trustees. The Sherman Act (1890) aimed at this.",
+    minYear: 1882,
+    once: true,
+    cost: -1,
+    price: -1,
+    share: 10,
+    opinion: -8,
+    heat: 18,
+    quality: 0,
+  },
+];
+
+export const CARD_BY_ID: Record<string, CardDef> = Object.fromEntries(CARDS.map((card) => [card.id, card]));
+
+export function cardById(id: string): CardDef {
+  const card = CARD_BY_ID[id];
+  if (!card) {
+    throw new Error(`Unknown card ${id}`);
+  }
+  return card;
+}
+
+export function availableCards(team: TeamState, year: number): CardDef[] {
+  return CARDS.filter((card) => {
+    if (card.minYear && year < card.minYear) return false;
+    if (card.once && team.played.some((played) => played.id === card.id)) return false;
+    if (card.id === "trust" && team.trustFormed) return false;
+    if (card.buyout && !team.rivals.some((rival) => rival.alive)) return false;
+    return true;
+  });
+}

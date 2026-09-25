@@ -6,4 +6,7 @@ Merlin files Drive; Cursor cloud agents build code here. Companion to Economics-
 **How we use this:** You talk to Merlin → Merlin plans → a Cursor cloud agent builds in this repo → Merlin tests and ships (Pages or links).
 
 ## Status
-First sim: [Build the Line / Prove Up](build-the-line-sim/) (USHC.3, 1862–1890). Pages publishes it at `build-the-line-sim/` after Settings → Pages is set to the `gh-pages` branch.
+- [Build the Line / Prove Up](build-the-line-sim/) (USHC.3, 1862–1890). Pages: `build-the-line-sim/`.
+- [Oil Baron: Build It or Buy It?](oil-baron-game/) (G4 Captains of Industry, 1870–1890). Pages: `oil-baron-game/`.
+
+Settings → Pages should stay on the `gh-pages` branch, folder `/ (root)`.
