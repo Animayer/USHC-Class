@@ -13,7 +13,7 @@ import {
   createHomestead,
   drawWeather,
   fenceChoices,
-  freightCost,
+  formatPrice,
   homesteadDebrief,
   proveUp,
   resolveYear,
@@ -98,6 +98,7 @@ export function ProveUpView({
               key={item.miles}
               type="button"
               className="path-card"
+              aria-label={item.label}
               onClick={() => {
                 const seed = Math.floor(Math.random() * 1_000_000_000);
                 onChange(createHomestead(item.miles as DistanceMiles), drawWeather(seed), seed);
@@ -180,8 +181,11 @@ export function ProveUpView({
   const year = SEASON_YEARS[homestead.yearIndex] ?? 1870;
   const fences = fenceChoices(year);
   const fencePick = fences.includes(fence) ? fence : "sod";
-  const sampleBushels = 200;
   const last = homestead.log.at(-1);
+  const cropCopy = {
+    wheat: "The Plains cash crop. It holds up better in a dry year than corn does. Freight is charged per bushel, same as corn.",
+    corn: "A wet year fills more bushels, and drought nearly wipes the field. Freight is the same rate per bushel, but the lower price means that bill takes a bigger share of what you sell.",
+  } as const;
 
   return (
     <div className="pane">
@@ -203,7 +207,7 @@ export function ProveUpView({
           </p>
         ) : null}
       </section>
-      <MetricBars metrics={meters(homestead, last?.freight ?? freightCost(homestead.distanceMiles, sampleBushels))} />
+      <MetricBars metrics={meters(homestead, last?.freight ?? 0)} />
       <fieldset className="q-block">
         <legend>Crop</legend>
         {(["wheat", "corn"] as const).map((item) => (
@@ -216,8 +220,7 @@ export function ProveUpView({
           >
             <strong>{item === "wheat" ? "Wheat" : "Corn"}</strong>
             <span>
-              {money(CROP_PRICE[item])} a bushel. Corn yields more in a wet year and fails harder in drought. Corn is
-              bulkier, so freight hurts more.
+              {formatPrice(CROP_PRICE[item])} a bushel. {cropCopy[item]}
             </span>
           </button>
         ))}

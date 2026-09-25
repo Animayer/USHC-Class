@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { REFLECTION_PROMPTS } from "../lib/content";
 import { homesteadDebrief, type HomesteadState } from "../lib/homestead";
-import type { Progress, Reflections } from "../lib/progress";
+import { finishedRailroads, type Progress, type Reflections } from "../lib/progress";
 import { railroadDebrief, type RailroadState } from "../lib/railroad";
 import { TIMELINE } from "../lib/timeline";
 
@@ -52,11 +52,18 @@ export function ResultsView({
       </section>
       <section className="summary-card">
         <h2>Round 2 · Build the Line</h2>
-        <p>{railroadSummary(progress.railroad)}</p>
+        {finishedRailroads(progress).length === 0 ? (
+          <p>{railroadSummary(progress.railroad)}</p>
+        ) : (
+          finishedRailroads(progress).map((line) => <p key={line.path}>{railroadSummary(line)}</p>)
+        )}
+        {progress.railroad && !progress.railroad.done ? <p>The path you are on now is still in progress.</p> : null}
         <p>
-          Market case: Hill built the Great Northern without the federal subsidy, and Credit Mobilier is a cost of
-          cronyism. Subsidy case: no traffic yet in empty territory, a wartime Union tying California to the rest of
-          the country, and very high risk. The Native land record is not part of either cash score.
+          The Pacific Railway bonds were federal loans to be repaid, not grants. The Great Northern got no federal
+          Pacific Railway Act grant, but it did inherit a predecessor’s state and territorial land grants. Market
+          case: Hill still had to earn income from traffic, and Credit Mobilier is a cost of cronyism. Subsidy case:
+          no traffic yet in empty territory, a wartime Union tying California to the rest of the country, and very
+          high risk. The Native land record is not part of either cash score.
         </p>
       </section>
       {REFLECTION_PROMPTS.map((item, index) => (
