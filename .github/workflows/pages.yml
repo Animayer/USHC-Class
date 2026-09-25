@@ -1,0 +1,104 @@
+name: Deploy classroom sims to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "build-the-line-sim/**"
+      - ".github/workflows/pages.yml"
+  pull_request:
+    paths:
+      - "build-the-line-sim/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: build-the-line-sim/package-lock.json
+      - name: Test and build
+        working-directory: build-the-line-sim
+        run: |
+          npm ci
+          npm test
+          npm run build
+
+  deploy:
+    needs: check
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: build-the-line-sim/package-lock.json
+      - name: Build build-the-line-sim
+        working-directory: build-the-line-sim
+        run: |
+          npm ci
+          npm test
+          npm run build
+      - name: Assemble Pages site
+        run: |
+          mkdir -p site/build-the-line-sim
+          cp -a build-the-line-sim/dist/. site/build-the-line-sim/
+          touch site/.nojekyll
+          cat > site/index.html << 'EOF'
+          <!doctype html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <title>Battery Creek US History</title>
+              <style>
+                :root { color-scheme: dark; }
+                body {
+                  margin: 0;
+                  min-height: 100dvh;
+                  font-family: "Segoe UI", sans-serif;
+                  background: #071018;
+                  color: #f4efe4;
+                  padding: 2rem 1.2rem;
+                }
+                main { max-width: 40rem; }
+                h1 { font-family: Georgia, serif; font-size: 2rem; }
+                a { color: #3ecfbe; font-weight: 700; }
+              </style>
+            </head>
+            <body>
+              <main>
+                <p>Battery Creek High School · US History</p>
+                <h1>Classroom sims</h1>
+                <ul>
+                  <li><a href="./build-the-line-sim/">Build the Line / Prove Up</a> — land and railroad policy, 1862–1890</li>
+                </ul>
+              </main>
+            </body>
+          </html>
+          EOF
+      - name: Publish assembled site to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site
+          force_orphan: true
