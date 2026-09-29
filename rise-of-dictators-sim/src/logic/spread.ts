@@ -105,7 +105,7 @@ export const SPREAD_STEPS: SpreadStep[] = [
       "Who appointed Hitler chancellor on 30 January 1933?",
       ["President Hindenburg", "Winston Churchill", "Joseph Stalin", "Franklin D. Roosevelt"],
       0,
-      "Paul von Hindenburg, the president, appointed Hitler. The Enabling Act followed on 23 March 1933. Churchill was not prime minister. Roosevelt had just become president of the United States.",
+      "Paul von Hindenburg, the president, appointed Hitler. The Enabling Act followed on 23 March 1933. Churchill was not prime minister. Roosevelt did not become president of the United States until 4 March 1933.",
     ),
   },
   {

@@ -116,7 +116,12 @@ describe("smoke", () => {
 
   it("captures the review screenshots", async () => {
     mkdirSync("screenshots", { recursive: true });
-    mkdirSync("/opt/cursor/artifacts/screenshots", { recursive: true });
+    let artifactDir: string | null = "/opt/cursor/artifacts/screenshots";
+    try {
+      mkdirSync(artifactDir, { recursive: true });
+    } catch {
+      artifactDir = null;
+    }
     const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 });
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(String(error)));
@@ -131,9 +136,8 @@ describe("smoke", () => {
       );
       await page.waitForTimeout(500);
       const local = `screenshots/${shot.name}.png`;
-      const artifact = `/opt/cursor/artifacts/screenshots/rise-${shot.name}.png`;
       await page.screenshot({ path: local });
-      await page.screenshot({ path: artifact });
+      if (artifactDir) await page.screenshot({ path: `${artifactDir}/rise-${shot.name}.png` });
     }
     expect(errors, errors.join("\n")).toEqual([]);
     await page.close();

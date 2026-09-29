@@ -78,7 +78,8 @@ export function button(
     .setOrigin(0.5);
   root.add([g, text]);
   root.setSize(w, h);
-  root.setInteractive(new Phaser.Geom.Rectangle(0, 0, w, h), Phaser.Geom.Rectangle.Contains);
+  // Containers offset a hit area by half their size, so the rectangle starts at the centre.
+  root.setInteractive(new Phaser.Geom.Rectangle(w / 2, h / 2, w, h), Phaser.Geom.Rectangle.Contains);
   if (root.input) root.input.cursor = "pointer";
   root.on("pointerover", () => draw(true));
   root.on("pointerout", () => draw(false));

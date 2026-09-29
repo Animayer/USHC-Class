@@ -55,7 +55,7 @@ export const TONE: Record<SpreadTone, { fill: number; ink: string; label: string
   falling: { fill: 0x8a6a3a, ink: INK, label: "Fascist government falling" },
 };
 
-export const LEGEND: Faction[] = ["democracy", "nazi", "fascist", "japan", "soviet", "nationalist", "occupied", "neutral"];
+export const LEGEND: Faction[] = ["democracy", "weimar", "nazi", "fascist", "japan", "soviet", "nationalist", "china", "occupied", "contested", "colonial", "neutral"];
 
 export function display(size: number, color = CREAM, bold = false): Phaser.Types.GameObjects.Text.TextStyle {
   return {

@@ -255,9 +255,10 @@ export class PlayScene extends Phaser.Scene {
       this.tutorial ||
       this.teacherOpen;
     if (!covering) this.drawDock();
-    if (this.state.phase === "headline") this.drawHeadline();
-    if (this.state.phase === "solemn") this.drawSolemn();
-    if (this.state.phase === "battle") this.drawBattle();
+    // The tutorial sits alone on top; the headline or record panel waits underneath it.
+    if (this.state.phase === "headline" && !this.tutorial) this.drawHeadline();
+    if (this.state.phase === "solemn" && !this.tutorial) this.drawSolemn();
+    if (this.state.phase === "battle" && !this.tutorial) this.drawBattle();
     if (this.teacherOpen) this.drawTeacher();
     if (this.tutorial) this.drawTutorial();
     riseApi.phase = () => (this.tutorial ? "tutorial" : this.teacherOpen ? "teacher" : this.state.phase);
@@ -327,7 +328,7 @@ export class PlayScene extends Phaser.Scene {
     const body = this.add.text(16, 78, card.claim, { ...serif(18, CREAM), wordWrap: { width: w - 32 } });
     root.add([g, kind, title, body]);
     root.setSize(w, h);
-    root.setInteractive(new Phaser.Geom.Rectangle(0, 0, w, h), Phaser.Geom.Rectangle.Contains);
+    root.setInteractive(new Phaser.Geom.Rectangle(w / 2, h / 2, w, h), Phaser.Geom.Rectangle.Contains);
     if (root.input) root.input.cursor = "pointer";
     root.on("pointerover", () => draw(true));
     root.on("pointerout", () => draw(false));
@@ -502,8 +503,8 @@ export class PlayScene extends Phaser.Scene {
         : `The dice favor the ${roll.diceWinner}.`;
     const historyLine =
       battle.historical === "attacker"
-        ? `Historical result: ${battle.attacker} makes the gain described below.`
-        : `Historical result: ${battle.defender} holds.`;
+        ? `Historical result: ${battle.attacker} gained ground.`
+        : `Historical result: ${battle.defender} held.`;
     this.track(this.add.text(480, 480, diceLine, display(22, CREAM)));
     this.track(this.add.text(480, 520, historyLine, display(22, GOLD)));
     this.track(this.add.text(480, 570, battle.summary, { ...serif(22, CREAM), wordWrap: { width: 960 } }));
