@@ -7,11 +7,13 @@ on:
     paths:
       - "build-the-line-sim/**"
       - "oil-baron-game/**"
+      - "rise-of-dictators-sim/**"
       - ".github/workflows/pages.yml"
   pull_request:
     paths:
       - "build-the-line-sim/**"
       - "oil-baron-game/**"
+      - "rise-of-dictators-sim/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -32,6 +34,8 @@ jobs:
           - app: build-the-line-sim
             playwright: false
           - app: oil-baron-game
+            playwright: true
+          - app: rise-of-dictators-sim
             playwright: true
     steps:
       - name: Checkout
@@ -67,6 +71,7 @@ jobs:
           cache-dependency-path: |
             build-the-line-sim/package-lock.json
             oil-baron-game/package-lock.json
+            rise-of-dictators-sim/package-lock.json
       - name: Build build-the-line-sim
         working-directory: build-the-line-sim
         run: |
@@ -80,11 +85,19 @@ jobs:
           npx playwright install --with-deps chromium
           npm test
           npm run build
+      - name: Build rise-of-dictators-sim
+        working-directory: rise-of-dictators-sim
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm test
+          npm run build
       - name: Assemble Pages site
         run: |
-          mkdir -p site/build-the-line-sim site/oil-baron-game
+          mkdir -p site/build-the-line-sim site/oil-baron-game site/rise-of-dictators-sim
           cp -a build-the-line-sim/dist/. site/build-the-line-sim/
           cp -a oil-baron-game/dist/. site/oil-baron-game/
+          cp -a rise-of-dictators-sim/dist/. site/rise-of-dictators-sim/
           touch site/.nojekyll
           cat > site/index.html << 'EOF'
           <!doctype html>
@@ -115,6 +128,7 @@ jobs:
                 <ul>
                   <li><a href="./build-the-line-sim/">Build the Line / Prove Up</a> — land and railroad policy, 1862–1890</li>
                   <li><a href="./oil-baron-game/">Oil Baron: Build It or Buy It?</a> — Captains of Industry, 1870–1890</li>
+                  <li><a href="./rise-of-dictators-sim/">Rise of Dictators</a> — a war-map chronicle, 1922–1975</li>
                 </ul>
               </main>
             </body>
