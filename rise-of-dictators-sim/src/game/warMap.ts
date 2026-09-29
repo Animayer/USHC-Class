@@ -92,15 +92,22 @@ export class WarMap {
       const ph = Math.max(8, territory.h * u - 3);
       const g = scene.add.graphics();
       const font = pw < 70 ? 12 : pw < 110 ? 15 : 18;
+      const wrapped = territory.name.replace(" & ", "\n").replace(" Countries", "\nCountries");
       const label = scene.add
-        .text(px + pw / 2, py + ph / 2 + 4, territory.name, {
+        .text(px + pw / 2, py + ph / 2, wrapped, {
           fontFamily: "Oswald, sans-serif",
           fontSize: `${font}px`,
           color: "#1a120c",
           align: "center",
-          wordWrap: { width: pw - 8 },
+          wordWrap: { width: Math.max(12, pw - 10) },
         })
         .setOrigin(0.5);
+      let size = font;
+      while ((label.width > pw - 4 || label.height > ph - 6) && size > 9) {
+        size -= 1;
+        label.setFontSize(size);
+      }
+      const crowded = pw < 70;
       const badge = scene.add
         .text(px + pw - 4, py + 2, "", {
           fontFamily: "Oswald, sans-serif",
@@ -108,6 +115,10 @@ export class WarMap {
           color: "#f3ead7",
         })
         .setOrigin(1, 0);
+      if (crowded) {
+        label.setVisible(false);
+        badge.setVisible(false);
+      }
       g.setInteractive(new Phaser.Geom.Rectangle(px, py, pw, ph), Phaser.Geom.Rectangle.Contains);
       if (g.input) g.input.cursor = "pointer";
       const tile: Tile = {
@@ -143,7 +154,6 @@ export class WarMap {
       .setVisible(false)
       .setDepth(5);
     this.root.add(this.tip);
-    this.root.setDepth(1);
   }
 
   showHolds(snapshot: Snapshot, captions: Record<string, string> = {}): void {

@@ -2,7 +2,7 @@ import Phaser from "phaser";
 import { AudioBus } from "../audio/bus";
 import { riseApi } from "../game/api";
 import { CREAM, COL, display, GOLD, MUTED, serif } from "../game/palette";
-import { button, framedPanel, meterBar } from "../game/ui";
+import { button, chip, framedPanel, meterBar } from "../game/ui";
 import { spreadTerritories, WarMap } from "../game/warMap";
 import { answerSpread, chooseSpreadDecision, continueSpread, createSpread, currentSpreadStep, jumpSpreadYear, meterFor, REFLECTION_CLOSE, REFLECTIONS, setReflection } from "../logic/spread";
 import { SPREAD_TERRITORIES } from "../logic/spread";
@@ -31,6 +31,21 @@ export class SpreadScene extends Phaser.Scene {
     }, "quiet");
     button(this, 1688, 16, 200, 44, "Title", () => this.scene.start("title"), "quiet");
     this.map = new WarMap(this, 20, 80, 1040, 960, 980, 560, spreadTerritories(SPREAD_TERRITORIES));
+    const legend: [number, string][] = [
+      [0x8e3a34, "Nazi rule"],
+      [0x6e3a48, "Invaded"],
+      [0x6a6b38, "Axis partner"],
+      [0x2c5d86, "Allied"],
+      [0xc6b48c, "Neutral"],
+      [0x3d6e62, "Freed"],
+      [0x7a3050, "Soviet"],
+      [0x8a7a62, "1945 occupation"],
+    ];
+    legend.forEach((item, index) => {
+      const col = index % 4;
+      const row = Math.floor(index / 4);
+      chip(this, 48 + col * 250, 900 + row * 34, item[0], item[1]);
+    });
     riseApi.act = () => this.act();
     riseApi.phase = () => (this.state.phase === "play" ? "spread" : this.state.phase === "done" ? "spread-done" : "spread");
     this.refresh();

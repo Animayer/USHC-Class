@@ -248,7 +248,13 @@ export class PlayScene extends Phaser.Scene {
     if (this.state.phase === "battle" && era.battle) this.map.highlight([era.battle.fromId, era.battle.toId]);
     for (const obj of this.built) obj.destroy();
     this.built = [];
-    this.drawDock();
+    const covering =
+      this.state.phase === "headline" ||
+      this.state.phase === "solemn" ||
+      this.state.phase === "battle" ||
+      this.tutorial ||
+      this.teacherOpen;
+    if (!covering) this.drawDock();
     if (this.state.phase === "headline") this.drawHeadline();
     if (this.state.phase === "solemn") this.drawSolemn();
     if (this.state.phase === "battle") this.drawBattle();
@@ -261,6 +267,13 @@ export class PlayScene extends Phaser.Scene {
   private track<T extends Phaser.GameObjects.GameObject>(obj: T): T {
     this.built.push(obj);
     return obj;
+  }
+
+  private sealModal(start: number): void {
+    for (let index = start; index < this.built.length; index += 1) {
+      const obj = this.built[index] as Phaser.GameObjects.GameObject & { setDepth?: (value: number) => void };
+      obj.setDepth?.(46);
+    }
   }
 
   private drawDock(): void {
@@ -373,8 +386,9 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private drawHeadline(): void {
+    const mark = this.built.length;
     const era = currentEra(this.state);
-    const dim = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.55).setInteractive();
+    const dim = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.72).setInteractive();
     const paper = paperPanel(this, 390, 150, 1140, 700);
     const mast = this.add.text(960, 190, "THE BATTERY CREEK GAZETTE", display(22, "#1a120c")).setOrigin(0.5);
     const date = this.add.text(960, 230, era.dateline.toUpperCase(), display(18, "#8e3a34")).setOrigin(0.5);
@@ -406,9 +420,11 @@ export class PlayScene extends Phaser.Scene {
       this.lastSound = "headline";
       if (!riseApi.instant) this.audio.play("paper");
     }
+    this.sealModal(mark);
   }
 
   private drawSolemn(): void {
+    const mark = this.built.length;
     const solemn = solemnNow(this.state);
     if (!solemn) return;
     if (this.lastSound !== "solemn") {
@@ -431,14 +447,16 @@ export class PlayScene extends Phaser.Scene {
     this.track(title);
     this.track(source);
     this.track(next.root);
+    this.sealModal(mark);
   }
 
   private drawBattle(): void {
+    const mark = this.built.length;
     const era = currentEra(this.state);
     const battle = era.battle;
     const roll = this.state.battle;
     if (!battle || !roll) return;
-    const dim = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.5).setInteractive();
+    const dim = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.78).setInteractive().setDepth(40);
     const panel = framedPanel(this, 420, 140, 1080, 760);
     const title = this.add.text(960, 190, battle.title.toUpperCase(), display(40, GOLD)).setOrigin(0.5);
     const date = this.add.text(960, 240, battle.date, serif(22, CREAM)).setOrigin(0.5);
@@ -495,9 +513,11 @@ export class PlayScene extends Phaser.Scene {
       this.act();
     });
     this.track(next.root);
+    this.sealModal(mark);
   }
 
   private drawTutorial(): void {
+    const mark = this.built.length;
     const dim = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.72).setInteractive();
     const panel = framedPanel(this, 420, 180, 1080, 700);
     const title = this.add.text(480, 220, "BEFORE THE FIRST HEADLINE", display(36, GOLD));
@@ -512,9 +532,11 @@ export class PlayScene extends Phaser.Scene {
     this.track(title);
     this.track(body);
     this.track(next.root);
+    this.sealModal(mark);
   }
 
   private drawTeacher(): void {
+    const mark = this.built.length;
     const dim = this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.55).setInteractive();
     const panel = framedPanel(this, 560, 180, 800, 700);
     const title = this.add.text(600, 210, "TEACHER DESK", display(36, GOLD));
@@ -547,6 +569,7 @@ export class PlayScene extends Phaser.Scene {
       const made = button(this, 620, 280 + index * 80, 680, 64, action[0], action[1], index === actions.length - 1 ? "quiet" : "gold");
       this.track(made.root);
     });
+    this.sealModal(mark);
   }
 
   private remember(): void {
