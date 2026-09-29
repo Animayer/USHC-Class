@@ -98,7 +98,7 @@ In this sheet the correct choice is printed first, then the explanation the game
 
 ## Credits and sources
 
-Portraits, the map, and the sound are original. Control is shown by a color and a plain letter, not by a flag or a party emblem.
+Portraits and the sound are original. The map is drawn in the game from Natural Earth 1:110m coastlines and country outlines, which are public domain (naturalearthdata.com/about/terms-of-use/). Weimar Germany, interwar Poland, Czechoslovakia, the Urals split, Manchuria, and the north and south of China are simplified borders drawn for this chronicle, not a survey. Control is shown by a color and a plain letter, not by a flag or a party emblem.
 
 - United States Holocaust Memorial Museum. Holocaust encyclopedia, including the introduction and the Wannsee Conference.
 - Richard J. Evans, *The Third Reich* trilogy.
@@ -112,6 +112,7 @@ Portraits, the map, and the sound are original. Control is shown by a color and 
 - International Military Tribunal for the Far East. Nanjing finding of more than 200,000 dead. Tojo executed 23 December 1948.
 - Office of the Historian, U.S. Department of State.
 - Encyclopaedia Britannica, for date checks.
+- Natural Earth, public-domain 1:110m cultural and physical vectors, for coastlines and country outlines. https://www.naturalearthdata.com/about/terms-of-use/
 
 ## Pages
 

@@ -4,11 +4,10 @@ import { riseApi } from "../game/api";
 import { CREAM, COL, display, GOLD, MUTED, serif } from "../game/palette";
 import { PORTRAITS, portraitKey } from "../game/portraits";
 import { button, framedPanel } from "../game/ui";
-import { WarMap, worldTerritories } from "../game/warMap";
+import { WarMap } from "../game/warMap";
 import { createGame } from "../logic/engine";
 import type { Length } from "../logic/types";
 import { Y1940 } from "../logic/snapshots";
-import { TERRITORIES } from "../logic/territories";
 import { SOURCES } from "../logic/sources";
 
 const NAMES = ["Allies", "Analysts", "Axis Desk", "Soviet Desk", "China & Spain"];
@@ -69,10 +68,10 @@ export class TitleScene extends Phaser.Scene {
     }, "quiet");
 
     framedPanel(this, 940, 70, 940, 780);
-    this.map = new WarMap(this, 956, 86, 908, 620, 1200, 450, worldTerritories(TERRITORIES));
+    this.map = new WarMap(this, 956, 86, 908, 640, "world");
     this.map.showHolds(Y1940);
     this.map.highlight(["germany", "france", "poland"]);
-    this.add.text(980, 710, "THEATRE MAP  ·  1940  ·  NOT A SCOREBOARD", display(16, GOLD));
+    this.add.text(980, 736, "THEATRE MAP  ·  1940  ·  NOT A SCOREBOARD", display(22, GOLD));
 
     PORTRAITS.slice(0, 8).forEach((portrait, index) => {
       const x = 80 + index * 230;
@@ -186,7 +185,7 @@ export class TitleScene extends Phaser.Scene {
     layer.add(this.add.rectangle(960, 540, 1920, 1080, 0x000000, 0.66).setInteractive());
     layer.add(framedPanel(this, 420, 80, 1080, 920));
     layer.add(this.add.text(460, 110, "CREDITS AND SOURCES", display(36, GOLD)));
-    layer.add(this.add.text(460, 170, "Portraits, map, and sound are original, drawn and synthesized for this class. No national hate symbol is used. Control is shown by color and a plain letter.", {
+    layer.add(this.add.text(460, 170, "Portraits and sound are original. Coastlines are public-domain Natural Earth outlines, redrawn for this class. No national hate symbol is used. Control is shown by color and a plain letter.", {
       ...serif(20, CREAM),
       wordWrap: { width: 980 },
     }));
