@@ -1,0 +1,26 @@
+{
+  "name": "rise-of-dictators-sim",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@fontsource/oswald": "^5.2.8",
+    "@fontsource/source-serif-4": "^5.2.9",
+    "phaser": "^3.88.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "oxlint": "^1.79.0",
+    "playwright": "^1.55.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
+  }
+}

@@ -8,5 +8,6 @@ Merlin files Drive; Cursor cloud agents build code here. Companion to Economics-
 ## Status
 - [Build the Line / Prove Up](build-the-line-sim/) (USHC.3, 1862–1890). Pages: `build-the-line-sim/`.
 - [Oil Baron: Build It or Buy It?](oil-baron-game/) (G4 Captains of Industry, 1870–1890). Pages: `oil-baron-game/`.
+- [Rise of Dictators](rise-of-dictators-sim/) (USHC.4, 1922–1975). Pages: `rise-of-dictators-sim/`.
 
 Settings → Pages should stay on the `gh-pages` branch, folder `/ (root)`.
