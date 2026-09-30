@@ -54,7 +54,7 @@ export function button(
   label: string,
   onClick: () => void,
   tone: "gold" | "paper" | "quiet" = "gold",
-  size = 22,
+  size = 24,
 ): ButtonHandle {
   const root = scene.add.container(x, y);
   const g = scene.add.graphics();
@@ -106,7 +106,7 @@ export function chip(
   g.fillRoundedRect(0, 0, 18, 18, 3);
   g.lineStyle(1, 0x1a120c, 0.6);
   g.strokeRoundedRect(0, 0, 18, 18, 3);
-  const text = scene.add.text(24, 9, label, display(16, CREAM)).setOrigin(0, 0.5);
+  const text = scene.add.text(26, 9, label, display(24, CREAM)).setOrigin(0, 0.5);
   root.add([g, text]);
   return root;
 }

@@ -4,11 +4,10 @@ import { riseApi } from "../game/api";
 import { CREAM, COL, display, FACTION, GOLD, LEGEND, MUTED, serif } from "../game/palette";
 import { portraitKey } from "../game/portraits";
 import { button, die, framedPanel, paperPanel } from "../game/ui";
-import { WarMap, worldTerritories } from "../game/warMap";
+import { WarMap } from "../game/warMap";
 import { autoAdvance, createGame, currentCards, currentEra, dismiss, playCard, answerQuestion, skipToDebrief, solemnNow, toggleNotes, visibleSnapshot } from "../logic/engine";
 import { addBoard, type BoardEntry } from "../logic/scoring";
 import { ROLES } from "../logic/roles";
-import { TERRITORIES } from "../logic/territories";
 import type { CardDef, GameState } from "../logic/types";
 
 const BOARD_KEY = "rise-dictators-board";
@@ -56,16 +55,7 @@ export class PlayScene extends Phaser.Scene {
     }, "quiet");
     button(this, 1620, 10, 270, 44, "Teacher", () => this.toggleTeacher(), "quiet");
 
-    this.map = new WarMap(this, 24, 76, 1872, 520, 1200, 450, worldTerritories(TERRITORIES));
-    let legendX = 36;
-    for (const faction of LEGEND) {
-      const style = FACTION[faction];
-      const g = this.add.graphics();
-      g.fillStyle(style.fill, 1);
-      g.fillRoundedRect(legendX, 608, 16, 16, 3);
-      const label = this.add.text(legendX + 22, 616, style.label, display(15, CREAM)).setOrigin(0, 0.5);
-      legendX += label.width + 48;
-    }
+    this.map = new WarMap(this, 16, 68, 1232, 996, "world");
 
     this.input.keyboard?.on("keydown", this.onKey, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
@@ -278,37 +268,70 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private drawDock(): void {
-    const y = 640;
-    this.track(framedPanel(this, 20, y, 900, 420));
-    this.track(this.add.text(44, y + 16, "CAUSE  →  EFFECT", display(18, GOLD)));
-    const lines = this.state.log.slice(-4);
-    lines.forEach((line, index) => {
-      this.track(this.add.text(44, y + 52 + index * 88, line.year, display(16, GOLD)));
-      this.track(this.add.text(120, y + 48 + index * 88, line.text, { ...serif(18, CREAM), wordWrap: { width: 760 } }));
-    });
-
-    this.track(framedPanel(this, 940, y, 960, 420));
+    const x = 1264;
+    const y = 68;
+    const w = 636;
+    this.track(framedPanel(this, x, y, w, 996));
+    let cursor = y + 16;
+    cursor = this.drawLegend(x + 16, cursor, w - 32);
+    cursor += 10;
+    this.track(this.add.text(x + 18, cursor, "CAUSE  →  EFFECT", display(26, GOLD)));
+    cursor += 36;
+    for (const line of this.state.log.slice(-3)) {
+      this.track(this.add.text(x + 18, cursor, line.year, display(22, GOLD)));
+      const body = this.track(this.add.text(x + 96, cursor, line.text, { ...serif(24, CREAM), wordWrap: { width: w - 128 } }));
+      cursor += Math.max(40, body.height + 14);
+    }
+    cursor += 6;
     const team = this.state.teams[this.state.activeTeam];
     const role = ROLES[team.role];
-    this.track(this.add.text(968, y + 16, team.name.toUpperCase(), display(28, team.color)));
-    this.track(this.add.text(968, y + 52, `${role.name}  ·  Insight ${team.insight}`, display(18, MUTED)));
-    this.track(this.add.text(968, y + 78, role.objective, { ...serif(18, CREAM), wordWrap: { width: 900 } }));
+    this.track(this.add.text(x + 18, cursor, team.name.toUpperCase(), display(32, team.color)));
+    cursor += 40;
+    this.track(this.add.text(x + 18, cursor, `${role.name}  ·  Insight ${team.insight}`, display(24, MUTED)));
+    cursor += 32;
+    const objective = this.track(this.add.text(x + 18, cursor, role.objective, { ...serif(24, CREAM), wordWrap: { width: w - 40 } }));
+    cursor += objective.height + 10;
     const scores = this.state.teams.map((item) => `${item.name} ${item.insight}`).join("    ");
-    this.track(this.add.text(968, y + 112, scores, display(16, MUTED)));
+    this.track(this.add.text(x + 18, cursor, scores, display(24, MUTED)));
+    cursor += 36;
 
-    if (this.state.phase === "decide") this.drawCards(y);
-    else if (this.state.phase === "verdict" && this.state.verdict) this.drawVerdict(y);
-    else if (this.state.phase === "question" || this.state.phase === "explain") this.drawQuestion(y);
-    else if (this.state.phase === "note") this.drawNote(y);
-    else if (this.state.phase === "debrief") this.drawDebriefPrompt(y);
-    else this.track(this.add.text(968, y + 180, "The headline is the turn. Read it, then continue.", serif(22, CREAM)));
+    if (this.state.phase === "decide") this.drawCards(x, cursor, w);
+    else if (this.state.phase === "verdict" && this.state.verdict) this.drawVerdict(x, cursor, w);
+    else if (this.state.phase === "question" || this.state.phase === "explain") this.drawQuestion(x, cursor, w);
+    else if (this.state.phase === "note") this.drawNote(x, cursor, w);
+    else if (this.state.phase === "debrief") this.drawDebriefPrompt(x, cursor, w);
+    else this.track(this.add.text(x + 18, cursor, "The headline is the turn. Read it, then continue.", { ...serif(24, CREAM), wordWrap: { width: w - 40 } }));
   }
 
-  private drawCards(y: number): void {
+  private drawLegend(x: number, y: number, width: number): number {
+    const columns = 2;
+    const colW = width / columns;
+    let row = 0;
+    LEGEND.forEach((faction, index) => {
+      const style = FACTION[faction];
+      const col = index % columns;
+      const line = Math.floor(index / columns);
+      row = line;
+      const px = x + col * colW;
+      const py = y + line * 36;
+      const swatch = this.add.graphics();
+      swatch.fillStyle(style.fill, 1);
+      swatch.fillRoundedRect(px, py + 4, 18, 18, 3);
+      swatch.lineStyle(1, 0x1a120c, 0.65);
+      swatch.strokeRoundedRect(px, py + 4, 18, 18, 3);
+      this.track(swatch);
+      this.track(this.add.text(px + 26, py + 13, style.label, display(24, CREAM)).setOrigin(0, 0.5));
+    });
+    return y + (row + 1) * 36;
+  }
+
+  private drawCards(x: number, y: number, w: number): void {
     const cards = currentCards(this.state);
+    const gap = 12;
+    const available = 1064 - y - gap;
+    const height = Math.max(150, Math.min(210, (available - gap) / Math.max(1, cards.length) - 4));
     cards.forEach((card, index) => {
-      const x = 968 + index * 450;
-      this.cardFace(x, y + 150, 430, 230, card, () => this.choose(card));
+      this.cardFace(x + 16, y + index * (height + gap), w - 32, height, card, () => this.choose(card));
     });
   }
 
@@ -323,9 +346,9 @@ export class PlayScene extends Phaser.Scene {
       g.strokeRoundedRect(1, 1, w - 2, h - 2, 10);
     };
     draw(false);
-    const kind = this.add.text(16, 12, card.kind.toUpperCase(), display(14, GOLD));
-    const title = this.add.text(16, 36, card.title, display(24, CREAM));
-    const body = this.add.text(16, 78, card.claim, { ...serif(18, CREAM), wordWrap: { width: w - 32 } });
+    const kind = this.add.text(16, 12, card.kind.toUpperCase(), display(20, GOLD));
+    const title = this.add.text(16, 40, card.title, display(26, CREAM));
+    const body = this.add.text(16, 78, card.claim, { ...serif(24, CREAM), wordWrap: { width: w - 32 } });
     root.add([g, kind, title, body]);
     root.setSize(w, h);
     root.setInteractive(new Phaser.Geom.Rectangle(w / 2, h / 2, w, h), Phaser.Geom.Rectangle.Contains);
@@ -336,53 +359,53 @@ export class PlayScene extends Phaser.Scene {
     this.track(root);
   }
 
-  private drawVerdict(y: number): void {
+  private drawVerdict(x: number, y: number, w: number): void {
     const verdict = this.state.verdict;
     if (!verdict) return;
-    this.track(this.add.text(968, y + 160, verdict.insight ? "ON THE RECORD" : "INCOMPLETE", display(22, verdict.insight ? GOLD : "#d08a72")));
-    this.track(this.add.text(968, y + 200, verdict.title, display(28, CREAM)));
-    this.track(this.add.text(968, y + 246, verdict.text, { ...serif(22, CREAM), wordWrap: { width: 880 } }));
-    const next = button(this, 968, y + 360, 240, 56, "Continue", () => this.act());
+    this.track(this.add.text(x + 18, y, verdict.insight ? "ON THE RECORD" : "INCOMPLETE", display(24, verdict.insight ? GOLD : "#d08a72")));
+    this.track(this.add.text(x + 18, y + 36, verdict.title, { ...display(28, CREAM), wordWrap: { width: w - 40 } }));
+    this.track(this.add.text(x + 18, y + 110, verdict.text, { ...serif(24, CREAM), wordWrap: { width: w - 40 } }));
+    const next = button(this, x + 18, Math.min(y + 280, 980), 260, 60, "Continue", () => this.act(), "gold", 24);
     this.track(next.root);
   }
 
-  private drawQuestion(y: number): void {
+  private drawQuestion(x: number, y: number, w: number): void {
     const era = currentEra(this.state);
-    this.track(this.add.text(968, y + 146, era.question.prompt, { ...serif(22, CREAM), wordWrap: { width: 900 } }));
+    const prompt = this.track(this.add.text(x + 18, y, era.question.prompt, { ...serif(24, CREAM), wordWrap: { width: w - 40 } }));
+    let row = prompt.y + prompt.height + 14;
     if (this.state.phase === "explain" && this.state.answer) {
       const answer = this.state.answer;
-      this.track(this.add.text(968, y + 230, answer.correct ? "Yes. That matches the record." : "Not that one. Here is the record.", display(22, GOLD)));
-      this.track(this.add.text(968, y + 268, answer.explain, { ...serif(20, CREAM), wordWrap: { width: 880 } }));
-      const next = button(this, 968, y + 360, 240, 56, "Continue", () => this.act());
+      this.track(this.add.text(x + 18, row, answer.correct ? "Yes. That matches the record." : "Not that one. Here is the record.", display(24, GOLD)));
+      this.track(this.add.text(x + 18, row + 36, answer.explain, { ...serif(24, CREAM), wordWrap: { width: w - 40 } }));
+      const next = button(this, x + 18, Math.min(row + 220, 980), 260, 60, "Continue", () => this.act(), "gold", 24);
       this.track(next.root);
       return;
     }
+    const choiceH = era.question.choices.length > 3 ? 78 : 88;
     era.question.choices.forEach((choice, index) => {
-      const col = index % 2;
-      const row = Math.floor(index / 2);
-      const made = button(this, 968 + col * 460, y + 230 + row * 86, 440, 78, choice, () => this.pick(index), "paper", 18);
+      const made = button(this, x + 18, row + index * (choiceH + 8), w - 36, choiceH, choice, () => this.pick(index), "paper", 24);
       this.track(made.root);
     });
   }
 
-  private drawNote(y: number): void {
+  private drawNote(x: number, y: number, w: number): void {
     const era = currentEra(this.state);
     const page = era.pages[this.notePage] ?? era.pages[0];
-    this.track(this.add.text(968, y + 150, "HISTORY NOTES", display(18, GOLD)));
-    this.track(this.add.text(968, y + 182, page, { ...serif(20, CREAM), wordWrap: { width: 880 } }));
-    this.track(this.add.text(968, y + 340, `Source: ${era.source}`, serif(16, MUTED)));
+    this.track(this.add.text(x + 18, y, "HISTORY NOTES", display(24, GOLD)));
+    this.track(this.add.text(x + 18, y + 36, page, { ...serif(24, CREAM), wordWrap: { width: w - 40 } }));
+    this.track(this.add.text(x + 18, Math.min(y + 250, 900), `Source: ${era.source}`, { ...serif(22, MUTED), wordWrap: { width: w - 40 } }));
     const label = this.notePage < era.pages.length - 1 ? "Next page" : "Recorded";
-    const next = button(this, 968, y + 360, 240, 56, label, () => this.act());
+    const next = button(this, x + 18, 980, 260, 60, label, () => this.act(), "gold", 24);
     this.track(next.root);
   }
 
-  private drawDebriefPrompt(y: number): void {
-    this.track(this.add.text(968, y + 170, "The chronicle is complete.", display(32, CREAM)));
-    this.track(this.add.text(968, y + 220, "The debrief names the human cost, then the exit quiz asks ten questions.", {
-      ...serif(22, CREAM),
-      wordWrap: { width: 860 },
+  private drawDebriefPrompt(x: number, y: number, w: number): void {
+    this.track(this.add.text(x + 18, y, "The chronicle is complete.", { ...display(32, CREAM), wordWrap: { width: w - 40 } }));
+    this.track(this.add.text(x + 18, y + 80, "The debrief names the human cost, then the exit quiz asks ten questions.", {
+      ...serif(24, CREAM),
+      wordWrap: { width: w - 40 },
     }));
-    const next = button(this, 968, y + 320, 320, 64, "Open the debrief", () => this.act());
+    const next = button(this, x + 18, y + 200, 340, 64, "Open the debrief", () => this.act(), "gold", 24);
     this.track(next.root);
   }
 
@@ -497,6 +520,7 @@ export class PlayScene extends Phaser.Scene {
         },
       });
     }
+    const disagree = roll.diceWinner !== "tie" && roll.diceWinner !== battle.historical;
     const diceLine =
       roll.diceWinner === "tie"
         ? "The dice tied."
@@ -505,10 +529,26 @@ export class PlayScene extends Phaser.Scene {
       battle.historical === "attacker"
         ? `Historical result: ${battle.attacker} gained ground.`
         : `Historical result: ${battle.defender} held.`;
-    this.track(this.add.text(480, 480, diceLine, display(22, CREAM)));
-    this.track(this.add.text(480, 520, historyLine, display(22, GOLD)));
-    this.track(this.add.text(480, 570, battle.summary, { ...serif(22, CREAM), wordWrap: { width: 960 } }));
-    this.track(this.add.text(480, 680, "The dice illustrate risk. This map follows the historical result. It is not a prize.", serif(18, MUTED)));
+    const stamp = this.add.graphics();
+    stamp.fillStyle(0x2a2218, 1);
+    stamp.fillRoundedRect(500, 448, 920, 44, 8);
+    stamp.lineStyle(1.5, 0xd4b15a, 1);
+    stamp.strokeRoundedRect(500, 448, 920, 44, 8);
+    this.track(stamp);
+    this.track(this.add.text(960, 470, "ILLUSTRATION ONLY", display(24, GOLD)).setOrigin(0.5));
+    this.track(this.add.text(480, 512, diceLine, display(24, CREAM)));
+    this.track(this.add.text(480, 548, historyLine, display(24, GOLD)));
+    if (disagree) {
+      this.track(this.add.text(480, 588, "The dice and the record disagree. These dice are an illustration only.", {
+        ...display(24, "#e0b090"),
+        wordWrap: { width: 960 },
+      }));
+    }
+    this.track(this.add.text(480, disagree ? 640 : 596, battle.summary, { ...serif(24, CREAM), wordWrap: { width: 960 } }));
+    this.track(this.add.text(480, 740, "The map follows the historical result. The dice are not a prize and do not award land.", {
+      ...serif(22, MUTED),
+      wordWrap: { width: 960 },
+    }));
     const next = button(this, 480, 800, 240, 60, "Continue", () => {
       this.audio.play("dice");
       this.act();
